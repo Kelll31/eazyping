@@ -2,10 +2,12 @@
 Mass ip ping scanner
 
 ### requirements:
+```console
 $ pip install ipaddress subprocess concurrent.futures socket argparse tqdm
+```
 
 ### Usage:
-
+```console
 $ python3 eazyping.py -h
 
 eazyping.py [-h] [-a] [-s SAVE_REPORT] [-f {txt}] [-t TIMEOUT] [-m MAX_THREADS] [-p CHECK_PORTS] [--traceroute] target
@@ -35,3 +37,4 @@ options:
   -p CHECK_PORTS, --check-ports CHECK_PORTS  Проверить открытые порты (укажите через запятую или диапазон через -).
   
   --traceroute  Включить проверку traceroute для работающих IP.
+```
