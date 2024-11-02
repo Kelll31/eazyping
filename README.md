@@ -1,10 +1,10 @@
 # easyping
 Mass ip ping scanner
 
-requirements:
+### requirements:
 $ pip install ipaddress subprocess concurrent.futures socket argparse tqdm
 
-Usage:
+### Usage:
 
 $ python3 eazyping.py -h
 
