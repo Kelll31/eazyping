@@ -14,7 +14,7 @@ def ping_host(ip, timeout):
         )
         return output.returncode == 0
     except Exception as e:
-        print(f"Ошибка при пинге {ip}: {e}")
+        tqdm.write(f"Ошибка при пинге {ip}: {e}")
         return False
 
 def resolve_domain_to_cidr(domain):
@@ -22,7 +22,7 @@ def resolve_domain_to_cidr(domain):
         ip = socket.gethostbyname(domain)
         return f"{ip}/32"
     except socket.gaierror as e:
-        print(f"Не удалось разрешить домен {domain}: {e}")
+        tqdm.write(f"Не удалось разрешить домен {domain}: {e}")
         return None
 
 def check_port(ip, port, timeout):
@@ -51,7 +51,7 @@ def traceroute(ip):
         )
         return output.stdout.decode('utf-8')
     except Exception as e:
-        print(f"Ошибка при выполнении traceroute для {ip}: {e}")
+        tqdm.write(f"Ошибка при выполнении traceroute для {ip}: {e}")
         return None
 
 def ping_cidr(cidr, show_all, timeout, max_threads, check_ports, traceroute_enabled):
@@ -60,7 +60,7 @@ def ping_cidr(cidr, show_all, timeout, max_threads, check_ports, traceroute_enab
         results = {}
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
             future_to_ip = {executor.submit(ping_host, ip, timeout): ip for ip in network.hosts()}
-            with tqdm(total=len(future_to_ip), desc="Scanning", unit="ip", position=0) as pbar:
+            with tqdm(total=len(future_to_ip), desc="Scanning", unit="ip", position=0, leave=False) as pbar:
                 for future in concurrent.futures.as_completed(future_to_ip):
                     ip = future_to_ip[future]
                     is_alive = future.result()
@@ -73,19 +73,19 @@ def ping_cidr(cidr, show_all, timeout, max_threads, check_ports, traceroute_enab
                     if show_all or is_alive:
                         status = "работает" if is_alive else "не работает"
                         ports_info = f", открытые порты: {results[str(ip)].get('open_ports', [])}" if is_alive else ""
-                        print(f"{ip} {status}{ports_info}")
+                        tqdm.write(f"{ip} {status}{ports_info}")
 
                     if is_alive and traceroute_enabled:
                         traceroute_output = traceroute(ip)
                         if traceroute_output:
-                            print(f"Traceroute для {ip}:\n{traceroute_output}")
+                            tqdm.write(f"Traceroute для {ip}:\n{traceroute_output}")
                             results[str(ip)]["traceroute"] = traceroute_output
 
                     pbar.update(1)
 
         return results
     except ValueError as e:
-        print(f"Неверный формат CIDR: {e}")
+        tqdm.write(f"Неверный формат CIDR: {e}")
         return {}
 
 def save_report(results, filename, format):
@@ -99,9 +99,9 @@ def save_report(results, filename, format):
                     f.write(f"  Открытые порты: {', '.join(map(str, info['open_ports']))}\n")
                 if 'traceroute' in info:
                     f.write(f"  Traceroute:\n{info['traceroute']}\n")
-        print(f"Отчет сохранен в {filename}")
+        tqdm.write(f"Отчет сохранен в {filename}")
     except IOError as e:
-        print(f"Ошибка при сохранении отчета: {e}")
+        tqdm.write(f"Ошибка при сохранении отчета: {e}")
 
 def parse_range(range_string):
     try:
@@ -110,7 +110,7 @@ def parse_range(range_string):
         end_ip = ipaddress.ip_address(end_ip)
         return [str(ip) for ip in ipaddress.summarize_address_range(start_ip, end_ip)]
     except ValueError as e:
-        print(f"Неверный формат диапазона: {e}")
+        tqdm.write(f"Неверный формат диапазона: {e}")
         return []
 
 def main():
@@ -143,7 +143,7 @@ def main():
     results = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.max_threads) as executor:
         future_to_ip = {executor.submit(ping_host, ip, args.timeout): ip for ip in ip_list}
-        with tqdm(total=len(future_to_ip), desc="Scanning", unit="ip", position=0) as pbar:
+        with tqdm(total=len(future_to_ip), desc="Scanning", unit="ip", position=0, leave=False) as pbar:
             for future in concurrent.futures.as_completed(future_to_ip):
                 ip = future_to_ip[future]
                 is_alive = future.result()
@@ -156,12 +156,12 @@ def main():
                 if args.show_all or is_alive:
                     status = "работает" if is_alive else "не работает"
                     ports_info = f", открытые порты: {results[ip].get('open_ports', [])}" if is_alive else ""
-                    print(f"{ip} {status}{ports_info}")
+                    tqdm.write(f"{ip} {status}{ports_info}")
 
                 if is_alive and args.traceroute:
                     traceroute_output = traceroute(ip)
                     if traceroute_output:
-                        print(f"Traceroute для {ip}:\n{traceroute_output}")
+                        tqdm.write(f"Traceroute для {ip}:\n{traceroute_output}")
                         results[ip]["traceroute"] = traceroute_output
 
                 pbar.update(1)
@@ -170,12 +170,13 @@ def main():
         save_report(results, args.save_report, args.format)
 
 if __name__ == "__main__":
-    print("Eazy ping by")
-    print(" _        _ _ _  _____  __  ")
-    print("| |      | | | ||____ |/  | ")
-    print("| | _____| | | |    / /`| | ")
-    print("| |/ / _ \ | | |    \ \ | | ")
-    print("|   <  __/ | | |.___/ /_| |_")
-    print("|_|\_\___|_|_|_|\____/ \___/")    
-    print("")              
+    art = r"""
+___________                             .__                 ___.            __          .__  .__  .__  ________  ____ 
+\_   _____/____  ___________.__. ______ |__| ____    ____   \_ |__ ___.__. |  | __ ____ |  | |  | |  | \_____  \/_   |
+ |    __)_\__  \ \___   <   |  | \____ \|  |/    \  / ___\   | __ <   |  | |  |/ // __ \|  | |  | |  |   _(__  < |   |
+ |        \/ __ \_/    / \___  | |  |_> >  |   |  \/ /_/  >  | \_\ \___  | |    <\  ___/|  |_|  |_|  |__/       \|   |
+/_______  (____  /_____ \/ ____| |   __/|__|___|  /\___  /   |___  / ____| |__|_ \\___  >____/____/____/______  /|___|
+        \/     \/      \/\/      |__|           \//_____/        \/\/           \/    \/                      \/      
+    """
+    print(art)           
     main()
