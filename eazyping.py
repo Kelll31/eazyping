@@ -114,8 +114,8 @@ def parse_range(range_string):
         return []
 
 def main():
-    parser = argparse.ArgumentParser(description="Пингование IP-адресов из CIDR или диапазона.")
-    parser.add_argument("target", help="CIDR диапазон, диапазон IP через '-' или домен для пингования.")
+    parser = argparse.ArgumentParser(description="Пингование IP-адресов из CIDR, диапазона, домена или файла.")
+    parser.add_argument("target", help="CIDR диапазон, диапазон IP через '-', домен или путь к файлу с IP-адресами.")
     parser.add_argument("-a", "--show-all", action="store_true", help="Показывать все IP-адреса, а не только работающие.")
     parser.add_argument("-s", "--save-report", help="Сохранить отчет в указанный файл.")
     parser.add_argument("-f", "--format", choices=["txt"], default="txt", help="Формат отчета (только txt).")
@@ -126,7 +126,14 @@ def main():
 
     args = parser.parse_args()
 
-    if '-' in args.target:
+    if args.target.endswith(".txt"):  # Если target — это файл
+        try:
+            with open(args.target, "r") as file:
+                ip_list = [line.strip() for line in file if line.strip()]
+        except IOError as e:
+            tqdm.write(f"Ошибка при чтении файла {args.target}: {e}")
+            return
+    elif '-' in args.target:
         ip_list = parse_range(args.target)
         if not ip_list:
             return
